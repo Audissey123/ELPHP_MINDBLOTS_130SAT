@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -23,6 +24,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
@@ -35,6 +37,7 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone,
                 'role' => $request->role,
+                'api_token' => Str::random(60),
             ]);
 
             // Create the corresponding farmer or investor record
@@ -57,17 +60,21 @@ class AuthController extends Controller
 
             $user->save();
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('audissey_token')->plainTextToken;
 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Registration successful',
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-                'expires_in' => config('sanctum.expiration', 60 * 24 * 7)
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'expires_in' => config('sanctum.expiration', 60 * 24 * 7)
+                ]
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Registration failed',
                 'error' => 'Unable to create user account. Please try again.'
             ], 500);
@@ -83,6 +90,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
@@ -90,6 +98,7 @@ class AuthController extends Controller
 
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Invalid credentials',
                 'error' => 'The provided credentials are incorrect.'
             ], 401);
@@ -102,17 +111,21 @@ class AuthController extends Controller
             $user->tokens()->delete();
             
             // Create new token
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('audissey_token')->plainTextToken;
 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Login successful',
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-                'expires_in' => config('sanctum.expiration', 60 * 24 * 7)
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'expires_in' => config('sanctum.expiration', 60 * 24 * 7)
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Login failed',
                 'error' => 'Unable to process login. Please try again.'
             ], 500);
@@ -124,11 +137,13 @@ class AuthController extends Controller
         try {
             $request->user()->currentAccessToken()->delete();
             return response()->json([
+                'status' => 'success',
                 'message' => 'Logged out successfully',
                 'info' => 'Your session has been terminated.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Logout failed',
                 'error' => 'Unable to terminate your session. Please try again.'
             ], 500);
@@ -137,6 +152,9 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'status' => 'success',
+            'data' => $request->user()
+        ]);
     }
 } 

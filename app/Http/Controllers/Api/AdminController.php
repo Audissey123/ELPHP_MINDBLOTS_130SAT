@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -20,7 +21,11 @@ class AdminController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -30,14 +35,19 @@ class AdminController extends Controller
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone,
                 'role' => 'admin',
+                'api_token' => Str::random(60),
             ]);
 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Admin user created successfully',
-                'admin' => $admin
+                'data' => [
+                    'admin' => $admin
+                ]
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Error creating admin user',
                 'error' => $e->getMessage()
             ], 500);
@@ -46,7 +56,20 @@ class AdminController extends Controller
 
     public function listAdmins()
     {
-        $admins = User::where('role', 'admin')->get();
-        return response()->json(['admins' => $admins]);
+        try {
+            $admins = User::where('role', 'admin')->get();
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'admins' => $admins
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error retrieving admin list',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 } 
