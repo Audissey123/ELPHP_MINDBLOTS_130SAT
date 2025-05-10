@@ -119,7 +119,7 @@ php artisan test --coverage
 ```
 
 ## 📦 Dependencies
-
+## Back
 ### Backend
 - Laravel Framework ^12.0
 - Laravel Sanctum ^4.1
